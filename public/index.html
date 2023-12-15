@@ -1,33 +1,234 @@
-<!doctype html>
-<html lang=en>
-  <head>
-    <meta charset=utf-8>
-    <title>Cyclic: Hello World</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
-    <link rel="stylesheet" type="text/css" href="/main.css">
-    <link rel="icon" href="/favicon.ico" />
-  </head>
-  <body>
-    <div id="hello-wrapper">
-      <div id="particles-js"></div>
-      <div class="content position-absolute w-100 top-0 pt-5">
-        <div class="cta">
-          <div id="hello" class="typewriter pb-3">
-            Hello World!
-          </div>
-          <a class="btn btn-primary mb-5" href="//app.cyclic.sh/api/login">Sign in to Cyclic</a>
-        </div>
-        <div id="world">
-          <canvas id='rotatingGlobe' style='cursor: move;'></canvas>
-        </div>
-      </div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Runner</title>
+</head>
+<body>
+    <div>
+        <h2>Logs</h2>
+        <textarea id="logs" rows="10" cols="50" readonly></textarea>
     </div>
-    <script type='text/javascript' src='//d3js.org/d3.v3.min.js'></script>
-    <script type='text/javascript' src='//d3js.org/topojson.v1.min.js'></script>
-    <script type='text/javascript' src='planetaryjs.min.js'></script>
-    <script src="//cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
-    <script src="//cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
-    <script type='text/javascript' src='particles.js'></script>
-    <script type='text/javascript' src='globe.js'></script>
-  </body>
+
+    <script>
+        const logsTextArea = document.getElementById('logs');
+        const wsUrl = 'wss://ws.kajiwoto.ai/socket.io/?EIO=4&transport=websocket';
+        let socket;
+
+        function connectWebSocket() {
+            socket = new WebSocket(wsUrl);
+
+            socket.onopen = function(event) {
+                addToLogs(`Connected to ${wsUrl}`);
+                sendInitialMessages();
+            };
+
+            socket.onmessage = function(event) {
+                addToLogs(`Received: ${event.data}`);
+                processReceivedMessage(event.data);
+            };
+
+            
+            	socket.onclose = function(event) {
+        
+        // Reconnect after a short delay (e.g., 3 seconds)
+        setTimeout(connectWebSocket, 3000);
+    
+                addToLogs(`Connection closed: ${event.reason}`);
+            };
+
+            socket.onerror = function(event) {
+                addToLogs(`Error: ${event.message}`);
+            };
+        }
+
+        function sendInitialMessages() {
+            const messages = [
+                '40{"api_key":"7782791a-fb4c-444e-ad0a-5836ca44c48a"}',
+                '42["login",{"guest":false,"banned":false,"phoneVerified":true,"userId":"75qbP","displayName":"kajiwotobot","pronoun":"U","username":"botx","plusType":"normal","profilePhotoUri":"2023_12/dw50axrszw_nzvxyla_1702138442561.jpeg","time":0},{},{"auth_id":"TnpWeFlsQT0=","auth_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfX25hbWUiOiJsb2dpbi1zZXNzaW9uIiwidndySWQiOiJ2c3NuOjFiOGI2YTM2LWM3YjMtNGY3MS1iZjVhLTAzY2E5NGVkMGRkMCIsImlkIjoiNzVxYlAiLCJfaWQiOjc3OTI3NSwiaXBBZGRyZXNzIjoiODMuMTcxLjIwNy4yNDUiLCJpYXQiOjE3MDI0NjM0NzN9.0eetAB3VY3jvciNLKhIzZes1ZngNVb99jsb5rvozDeI"}]',
+                '42["subscribe",{"guest":false,"banned":false,"phoneVerified":true,"userId":"75qbP","displayName":"Kajiwoto","pronoun":"U","username":"botx","plusType":"normal","profilePhotoUri":"2023_12/dw50axrszw_nzvxyla_1702203723812.png","time":1930},{"chatRoomIds":["Qp4P9"],"kajiId":"OB2Xg","roomIsLive":true,"isPrivateSession":false},{"auth_id":"TnpWeFlsQT0=","auth_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfX25hbWUiOiJsb2dpbi1zZXNzaW9uIiwidndySWQiOiJ2c3NuOjFiOGI2YTM2LWM3YjMtNGY3MS1iZjVhLTAzY2E5NGVkMGRkMCIsImlkIjoiNzVxYlAiLCJfaWQiOjc3OTI3NSwiaXBBZGRyZXNzIjoiODMuMTcxLjIwNy4yNDUiLCJpYXQiOjE3MDI0NjM0NzN9.0eetAB3VY3jvciNLKhIzZes1ZngNVb99jsb5rvozDeI"}]',
+              '42["userStatus",{"guest":false,"banned":false,"phoneVerified":true,"userId":"75qbP","displayName":"kajiwotobot","pronoun":"U","username":"botx","plusType":"normal","profilePhotoUri":"2023_12/dw50axrszw_nzvxyla_1702203723812.png","time":1930},{"status":"ONLINE","isPrivateSession":false},{"auth_id":"TnpWeFlsQT0=","auth_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfX25hbWUiOiJsb2dpbi1zZXNzaW9uIiwidndySWQiOiJ2c3NuOjFiOGI2YTM2LWM3YjMtNGY3MS1iZjVhLTAzY2E5NGVkMGRkMCIsImlkIjoiNzVxYlAiLCJfaWQiOjc3OTI3NSwiaXBBZGRyZXNzIjoiODMuMTcxLjIwNy4yNDUiLCJpYXQiOjE3MDI0NjM0NzN9.0eetAB3VY3jvciNLKhIzZes1ZngNVb99jsb5rvozDeI"}]'
+            ];
+
+            messages.forEach((message, index) => {
+                setTimeout(() => {
+                    socket.send(message);
+                    addToLogs(`Sent: ${message}`);
+                }, index * 1000); // Send messages with a 1-second delay
+            });
+        }
+   const websocketMessage = '42["userStatus",{"guest":false,"banned":false,"phoneVerified":true,"userId":"75qbP","displayName":"kajiwotobot","pronoun":"U","username":"botx","plusType":"normal","profilePhotoUri":"2023_12/dw50axrszw_nzvxyla_1702203723812.png","time":1930},{"status":"ONLINE","isPrivateSession":false},{"auth_id":"TnpWeFlsQT0=","auth_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfX25hbWUiOiJsb2dpbi1zZXNzaW9uIiwidndySWQiOiJ2c3NuOjFiOGI2YTM2LWM3YjMtNGY3MS1iZjVhLTAzY2E5NGVkMGRkMCIsImlkIjoiNzVxYlAiLCJfaWQiOjc3OTI3NSwiaXBBZGRyZXNzIjoiODMuMTcxLjIwNy4yNDUiLCJpYXQiOjE3MDI0NjM0NzN9.0eetAB3VY3jvciNLKhIzZes1ZngNVb99jsb5rvozDeI"}]';
+
+      const websocketTwo = '42["liveSub",{},{},{"auth_id":"VlVwbU5Hcz0=","auth_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfX25hbWUiOiJsb2dpbi1zZXNzaW9uIiwidndySWQiOiJ2c3NuOjFiOGI2YTM2LWM3YjMtNGY3MS1iZjVhLTAzY2E5NGVkMGRkMCIsImlkIjoiNzVxYlAiLCJfaWQiOjc3OTI3NSwiaXBBZGRyZXNzIjoiODMuMTcxLjIwNy4yNDUiLCJpYXQiOjE3MDI0NjM0NzN9.0eetAB3VY3jvciNLKhIzZes1ZngNVb99jsb5rvozDeI"}]';
+
+function extractRoomAndKajiIds(room) {
+  const roomId = room.id;
+  const kajiId = room.previewKajiId;
+  return { roomId, kajiId };
+}
+      
+function sendMessage() {
+  socket.send(websocketMessage);
+  socket.send(websocketTwo);
+
+  socket.addEventListener('message', function(event) {
+    
+
+    try {
+      const dataWithoutPrefix = event.data.substring(2);
+
+      // Try parsing the modified JSON
+      const message = JSON.parse(dataWithoutPrefix);
+
+      
+
+      // Extract room IDs and KajiIDs and send messages for each room
+      if (message[0] === 'liveActivity' && message[1] && message[1].data && message[1].data.liveRooms) {
+        const rooms = message[1].data.liveRooms;
+
+        rooms.forEach((room) => {
+          const { roomId, kajiId } = extractRoomAndKajiIds(room);
+          
+
+
+          // Modify the subscribe message with the actual room ID and KajiID
+          const modifiedSubscribeMessage = `42["subscribe",{"guest":false,"banned":false,"phoneVerified":true,"userId":"75qbP","displayName":"Kajiwoto","pronoun":"U","username":"botx","plusType":"normal","profilePhotoUri":"2023_12/dw50axrszw_nzvxyla_1702203723812.png","time":1930},{"chatRoomIds":["${roomId}"],"kajiId":"${kajiId}","roomIsLive":true,"isPrivateSession":false},{"auth_id":"TnpWeFlsQT0=","auth_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfX25hbWUiOiJsb2dpbi1zZXNzaW9uIiwidndySWQiOiJ2c3NuOjFiOGI2YTM2LWM3YjMtNGY3MS1iZjVhLTAzY2E5NGVkMGRkMCIsImlkIjoiNzVxYlAiLCJfaWQiOjc3OTI3NSwiaXBBZGRyZXNzIjoiODMuMTcxLjIwNy4yNDUiLCJpYXQiOjE3MDI0NjM0NzN9.0eetAB3VY3jvciNLKhIzZes1ZngNVb99jsb5rvozDeI"}]`;
+
+          // Send the modified subscribe message for each room
+          socket.send(modifiedSubscribeMessage);
+
+          console.log('Trying to keep online');
+          processReceivedMessage(roomId, kajiId);
+        });
+      }
+    } catch (error) {
+      console.error('Error parsing JSON:', error);
+    }
+  });
+}
+      
+      
+      
+
+// Set up a loop to send the message every 5 seconds
+setInterval(sendMessage, 25000);
+      
+
+
+function processReceivedMessage(data, roomId, kajiId) {
+  if (data.includes('"message":"/report')) {
+    try {
+      const messageWithoutPrefix = data.slice(2);
+      const parsedMessage = JSON.parse(messageWithoutPrefix);
+
+      // Check if the expected structure is present
+      if (
+        parsedMessage &&
+        Array.isArray(parsedMessage) &&
+        parsedMessage.length > 1 &&
+        parsedMessage[1].data &&
+        parsedMessage[1].data.message
+      ) {
+        // Extract relevant information
+        const { message, clientId, chatRoomId } = parsedMessage[1].data.message;
+
+        console.log(message);
+        console.log(clientId);
+        console.log(chatRoomId);
+
+        const reportMessage = `42["chatMessage",{"guest":false,"banned":false,"phoneVerified":true,"userId":"75qbP","displayName":"Kajiwoto","pronoun":"U","username":"botx","plusType":"normal","profilePhotoUri":"2023_12/dw50axrszw_nzvxyla_1702203723812.png","time":30},{"isLive":true,"isPrivateSession":false,"role":{"guest":false,"host":true,"owner":true,"moderator":true,"siteModerator":false,"creator":true},"message":{"id":"${clientId}","chatRoomId":"${chatRoomId}","userId":"75qbP","humanChat":false,"message":"— Report Sent to the moderation team."},"roomSocketIds":["sk-Ys_ICAlp5D6F7ALJv","ugS27dW_fwNUtpwOAK1o","NZ5R00U44llt2ZTPALOx","46fMOEF7iuz8KINCALX4"],"platform":"MOBILE"},{"auth_id":"TnpWeFlsQT0=","auth_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfX25hbWUiOiJsb2dpbi1zZXNzaW9uIiwidndySWQiOiJ2c3NuOmQwZWIyM2ZhLWMxNWMtNDM4Yy1hYzMzLTlkNGUwMjZlZWU4NSIsImlkIjoiNzVxYlAiLCJfaWQiOjc3OTI3NSwiaXBBZGRyZXNzIjoiODMuMTcxLjIwNy4yNDUiLCJpYXQiOjE3MDIxMzgwMzh9._EfImDo56knZo_OHf8pggNg50VKUTwrNSkD59UDrbWc"}]`;
+
+        socket.send(reportMessage);
+        addToLogs(`Sent: ${reportMessage}`);
+      } else {
+        console.log("Unexpected message structure:", parsedMessage);
+      }
+    } catch (error) {
+      console.error("Error parsing or extracting message:", error);
+    }
+  }
+
+      
+      
+const inappropriateWords = ['"message":"porn', '"message":"nigga', '"message":"kys','"message":"cvmming']; // Add more inappropriate words as needed
+
+function hasInappropriateWord(data) {
+  for (const word of inappropriateWords) {
+    if (data.includes(word)) {
+      return true; // Data contains an inappropriate word
+    }
+  }
+  return false; // No inappropriate words found
+}
+
+          if (hasInappropriateWord(data)) {
+const jsonData = JSON.parse(data.substring(2)); // Removing the '42' prefix
+
+      const messageWithoutPrefix = data.slice(2);
+      const parsedMessage = JSON.parse(messageWithoutPrefix);
+
+      // Check if the expected structure is present
+      if (
+        parsedMessage &&
+        Array.isArray(parsedMessage) &&
+        parsedMessage.length > 1 &&
+        parsedMessage[1].data &&
+        parsedMessage[1].data.message
+      ) {
+        // Extract relevant information
+        const { message, clientId, chatRoomId } = parsedMessage[1].data.message;
+                if (jsonData[1] && jsonData[1].data && jsonData[1].data.message && jsonData[1].data.message.userId) {
+                    const userId = jsonData[1].data.message.userId;
+                    addToLogs(`User ID Timeout: ${userId}`);
+                  const inappropriate = `42["chatMessage",{"guest":false,"banned":false,"phoneVerified":true,"userId":"75qbP","displayName":"Kajiwoto","pronoun":"U","username":"botx","plusType":"normal","profilePhotoUri":"2023_12/dw50axrszw_nzvxyla_1702203723812.png","time":30},{"isLive":true,"isPrivateSession":false,"role":{"guest":false,"host":false,"owner":false,"moderator":true,"siteModerator":false,"creator":false},"message":{"id":"${clientId}","chatRoomId":"${chatRoomId}","userId":"75qbP","humanChat":false,"message":"/timeout ${userId} 60 Reason: inappropriate word"},"roomSocketIds":["sk-Ys_ICAlp5D6F7ALJv","ugS27dW_fwNUtpwOAK1o","NZ5R00U44llt2ZTPALOx","46fMOEF7iuz8KINCALX4"],"platform":"MOBILE"},{"auth_id":"TnpWeFlsQT0=","auth_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfX25hbWUiOiJsb2dpbi1zZXNzaW9uIiwidndySWQiOiJ2c3NuOjFiOGI2YTM2LWM3YjMtNGY3MS1iZjVhLTAzY2E5NGVkMGRkMCIsImlkIjoiNzVxYlAiLCJfaWQiOjc3OTI3NSwiaXBBZGRyZXNzIjoiODMuMTcxLjIwNy4yNDUiLCJpYXQiOjE3MDI0NjM0NzN9.0eetAB3VY3jvciNLKhIzZes1ZngNVb99jsb5rvozDeI"}]`;
+
+                  socket.send(inappropriate);
+                addToLogs(`Banned: ${inappropriate}`);
+  console.log("Inappropriate word detected. Take appropriate action.");
+} else {
+  console.log("Message is clean.");
+          }
+            if (data.includes('"message":"nigga')) {
+                
+                }
+            }
+          }
+
+if (data.includes('"message":"porn')) {
+                const jsonData = JSON.parse(data.substring(2)); // Removing the '42' prefix
+
+                if (jsonData[1] && jsonData[1].data && jsonData[1].data.message && jsonData[1].data.message.userId) {
+                    const userId = jsonData[1].data.message.userId;
+                    addToLogs(`User ID Timeout: ${userId}`);
+                }
+}
+
+          
+                if (data.includes('"message":"Hi"')) {
+              
+
+                const welcoming = `42["chatMessage",{"guest":false,"banned":false,"phoneVerified":true,"userId":"75qbP","displayName":"Kajiwoto","pronoun":"U","username":"kajiwotobot","plusType":"normal","profilePhotoUri":"2023_12/dw50axrszw_nzvxyla_1702203723812.png","time":30},{"isLive":true,"isPrivateSession":false,"role":{"guest":false,"host":false,"owner":false,"moderator":true,"siteModerator":false,"creator":false},"message":{"id":"Qp4P9:1702312198266","chatRoomId":"Qp4P9","userId":"75qbP","humanChat":false,"message":"Hi, Welcome!"},"roomSocketIds":["sk-Ys_ICAlp5D6F7ALJv","ugS27dW_fwNUtpwOAK1o","NZ5R00U44llt2ZTPALOx","46fMOEF7iuz8KINCALX4"],"platform":"MOBILE"},{"auth_id":"TnpWeFlsQT0=","auth_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfX25hbWUiOiJsb2dpbi1zZXNzaW9uIiwidndySWQiOiJ2c3NuOmQwZWIyM2ZhLWMxNWMtNDM4Yy1hYzMzLTlkNGUwMjZlZWU4NSIsImlkIjoiNzVxYlAiLCJfaWQiOjc3OTI3NSwiaXBBZGRyZXNzIjoiODMuMTcxLjIwNy4yNDUiLCJpYXQiOjE3MDIxMzgwMzh9._EfImDo56knZo_OHf8pggNg50VKUTwrNSkD59UDrbWc"}]`;
+                socket.send(welcoming);
+                addToLogs(`Sent welcome: ${welcoming}`);
+            
+            }
+        
+        
+        }
+      
+
+        function addToLogs(message) {
+    logsTextArea.value += `${message}\n`;
+}
+
+
+        // Connect WebSocket on page load
+        connectWebSocket();
+        
+        
+        
+
+    </script>
+</body>
 </html>
